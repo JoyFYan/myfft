@@ -44,7 +44,7 @@ void FFT_all(unsigned char *image,unsigned char *fft_image,unsigned char *ifft_i
 
 //正常的傅里叶正变换
 void FFT(unsigned char *image,double *fft_image,long lWidth,long lHeight);
-
+void FFTUC(unsigned char *image, unsigned char *fft_image, long lWidth, long lHeight);
 //傅里叶频谱搬移,对任意宽度，其中处理了长宽不为偶数的情况。
 void fftshift(unsigned char *image,unsigned char *fftshift_image,long lWidth,long lHeight);
 

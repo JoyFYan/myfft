@@ -11,8 +11,7 @@ using namespace cv;
 void main()
 {
 	int i, j;
-	//Mat img = imread("C:\\cameraman.tif");// 创建一个名为 "游戏原画"窗口
-	IplImage* img = cvLoadImage("C:\\cameraman.tif", -1);
+	IplImage* img = cvLoadImage("C:\\2.tif", -1);//读取目标图像cameraman正确。
 	int m = img->height;
 	int n = img->width;
 	namedWindow("1");// 在窗口中显示游戏原画 
@@ -56,7 +55,8 @@ void main()
 		}
 	}
 
-	FFT_all(p, t, t0, n,m);
+	FFT_all(p, t, t0, n,m);//逆变换之后大小不正确。
+	//FFTUC(p,t0, n, m);
 	//for (i = 0;i < m;i++)//构建滤波模板，点乘
 	//{
 	//	for (j = 0;j < n;j++)
@@ -83,7 +83,7 @@ void main()
 		{
 			unsigned int k1 = m*i + j;
 			
-			cvSetReal2D(copy, i, j, t0[k1]);
+			cvSetReal2D(copy, i, j, t0[k1]);//改t0为t，显示fft图像不正确
 		}
 	}
 

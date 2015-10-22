@@ -994,13 +994,14 @@ void FFT_all(unsigned char *image, unsigned char *fft_image,unsigned char *ifft_
     out1 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) *lHeight*lWidth );    //存放傅里叶正变换结果
     out2 = (fftw_complex*) fftw_malloc(sizeof(fftw_complex) *lHeight*lWidth );    //存放傅里叶反变换结果
 	//float *modle = new float[lHeight*lWidth];
+
     int k = 0;
     for(i=0;i<lHeight;i++)
     {
         for (j=0;j<lWidth;j++,k++)
         {
             int k1=lineByte*i+j;  
-            if((i+j)%2!=0)in[k][0] = (double)image[k1]*(-1);     //实部    源图像可能不符合宽度为4
+            if((i+j)%2!=0)in[k][0] = (double)image[k1]*(-1);     //实部    源图像可能不符合宽度为4，相当于fftshift
 			else in[k][0] = (double)image[k1];
 			in[k][1] = 0.0;                   //虚部
         }
@@ -1008,41 +1009,21 @@ void FFT_all(unsigned char *image, unsigned char *fft_image,unsigned char *ifft_
       
     p=fftw_plan_dft_2d( lHeight, lWidth, in  , out1, FFTW_FORWARD, FFTW_ESTIMATE);
 	fftw_execute(p);
-	k = 0;
-	for (i = 0;i<lHeight;i++)
-	{
-		for (j = 0;j<lWidth;j++, k++)
-		{
-			//int k1 = lineByte*i + j;
-			if ((sqrt((i + 1 - lHeight / 2) * (1 + i - lHeight / 2) + (j + 1 - lWidth / 2) * (j + 1 - lWidth / 2))) > 6)
-			{
-				out1[k][1] = 0;
-				out1[k][0] = 0;
-			}
-		}
-	}
 
-	//for (i = 0;i < lHeight;i++)//构建滤波模板，点乘
+	//k = 0;
+	////下一段循环为构建滤波器模板
+	//for (i = 0;i<lHeight;i++)
 	//{
-	//	for (j = 0;j < lWidth;j++, k++)
+	//	for (j = 0;j<lWidth;j++, k++)
 	//	{
-	//		
-	//		//if ((sqrt((i + 1 - lHeight / 2) * (1 + i - lHeight / 2) + (j + 1 - lWidth / 2) * (j + 1 - lWidth / 2))) < 10)
-	//		if (i+j<10)
+	//		//int k1 = lineByte*i + j;
+	//		if ((sqrt((i + 1 - lHeight / 2) * (1 + i - lHeight / 2) + (j + 1 - lWidth / 2) * (j + 1 - lWidth / 2))) < 6)
 	//		{
 	//			out1[k][1] = 0;
 	//			out1[k][0] = 0;
 	//		}
-	//		//D = sqrt((m - M) ^ 2 + (n - N) ^ 2);
-	//		//H(m, n) = exp((-D ^ 2) / (2 * (50) ^ 2));
-	//		//else modle[i * lHeight + j] = 0;
-
 	//	}
-	//	//printf("\n");
 	//}
-
-
-
 
 
     q=fftw_plan_dft_2d( lHeight, lWidth, out1, out2, FFTW_BACKWARD, FFTW_ESTIMATE);
@@ -1141,6 +1122,64 @@ void FFT(unsigned char *image, double *fft_image,long lWidth,long lHeight)//imag
     fftw_free(out);
 }
 
+void FFTUC(unsigned char *image, unsigned char *fft_image, long lWidth, long lHeight)//image为一维数组
+{
+	int lineByte = (lWidth + 3) / 4 * 4;
+	double * temp = new double[lHeight*lWidth];
+	fftw_complex *in, *out;
+	fftw_plan p;
+	int i = 0, j = 0;
+
+	in = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) *lHeight*lWidth);    //存放原始数据
+	out = (fftw_complex*)fftw_malloc(sizeof(fftw_complex) *lHeight*lWidth);    //存放傅里叶正变换结果
+
+	int k = 0;
+	for (i = 0;i<lHeight;i++)
+	{
+		for (j = 0;j<lWidth;j++, k++)
+		{
+			int k1 = lineByte*i + j;
+			in[k][0] = (double)image[k1];     //实部    源图像可能不符合宽度为4
+			in[k][1] = 0.0;                   //虚部
+		}
+	}
+
+	p = fftw_plan_dft_2d(lHeight, lWidth, in, out, FFTW_FORWARD, FFTW_ESTIMATE);
+	fftw_execute(p);
+
+	double _max = -1;
+	double _min = 10000;
+	for (i = 0;i<lHeight*lWidth;i++)
+	{
+		temp[i] = log10(sqrt(out[i][0] * out[i][0] + out[i][1] * out[i][1]) + 1);//之前log内没有加1
+		if (_max<temp[i])
+		{
+			_max = temp[i];
+		}
+		if (_min>temp[i])
+		{
+			_min = temp[i];
+		}
+	}
+
+	double bili = _max - _min;
+
+	//求fft变换后的频谱
+	k = 0;
+	for (i = 0;i<lHeight;i++)
+	{
+		for (j = 0;j<lWidth;j++, k++)
+		{
+			int k1 = lineByte*i + j;
+			fft_image[k1] = BYTE(fabs((temp[k] - _min) * 255 / bili));   //这个只是为了显示好看而已
+		}
+		k = 0;//
+	}
+
+	fftw_destroy_plan(p);
+	fftw_free(in);
+	fftw_free(out);
+}
 
 /************************************************************************/
 /* 函数名称:   
